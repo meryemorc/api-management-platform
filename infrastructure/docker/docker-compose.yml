@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # User Service ve Organization Service için PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: parapuan-postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: parapuan_db
+    ports:
+      - "5432:5432"
+
+  # API Gateway (Rate Limiting) ve Caching için Redis
+  redis:
+    image: redis:7-alpine
+    container_name: parapuan-redis
+    ports:
+      - "6379:6379"
+
+  # Analytics Service için MongoDB
+  mongodb:
+    image: mongo:6.0
+    container_name: parapuan-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: analytics_db
+
+  # Event-driven mimari için Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
