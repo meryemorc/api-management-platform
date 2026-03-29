@@ -5,10 +5,15 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity
 @Data
@@ -20,15 +25,16 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    private String email;
     private String username;
     private String password;
-    private String email;
     private boolean isActive;
     private boolean isEmailVerified;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     private String providerId;
     private AuthProvider authProvider;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -36,8 +42,4 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private List<Role> roles;
-
-
-
-
 }
