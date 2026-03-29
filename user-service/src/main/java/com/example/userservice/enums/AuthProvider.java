@@ -1,4 +1,7 @@
 package com.example.userservice.enums;
+    public enum AuthProvider {
+        LOCAL,
+        GOOGLE,
+        GITHUB
+    }
 
-public class AuthProvider {
-}
