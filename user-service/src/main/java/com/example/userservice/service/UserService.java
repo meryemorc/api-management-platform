@@ -24,11 +24,11 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder; //sifre hashleme
+    private final JwtService jwtService; //token üretme
+    private final AuthenticationManager authenticationManager; //login dogrulama
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request) { //register isteginden nesne üretip bu nesnelerin fieldlarıyla user üretiyo
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Bu email zaten kayıtlı");
         }
@@ -38,26 +38,26 @@ public class UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .isActive(true)
-                .isEmailVerified(false)
-                .authProvider(AuthProvider.LOCAL)
+                .isEmailVerified(false) // email henüz dogrulanmadı
+                .authProvider(AuthProvider.LOCAL)//google veya github kaydı değil local kayıt
                 .createdAt(LocalDateTime.now())
                 .roles(List.of(roleRepository.findByName("ORG_MEMBER")
                         .orElseThrow(() -> new RuntimeException("Rol bulunamadı"))))
-                .build();
+                .build(); //user build ediyor
 
         userRepository.save(user);
 
-        var userPrincipal = new UserPrincipal(user);
-        var accessToken = jwtService.generateToken(userPrincipal);
-        var refreshToken = jwtService.generateRefreshToken(userPrincipal);
+        var userPrincipal = new UserPrincipal(user);// userı user principalla spring securitynın tanıyacagı formata getıryoruz
+        var accessToken = jwtService.generateToken(userPrincipal); //usera token uretıyoruz kullanıcı tekrar token üretmek zorunda kalmıyor
+        var refreshToken = jwtService.generateRefreshToken(userPrincipal); //user token güncelliyoruz
 
-        return AuthResponse.builder()
+        return AuthResponse.builder()//Auth response login ve response basarılı olunca sucunun clienta tokenları döndürmesini saglayan obje
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .build();
+                .build(); //build objeyi oluşturuyor ve döndürüyor
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) { //email login islemi dogrulama
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -65,10 +65,10 @@ public class UserService {
                 )
         );
 
-        var user = userRepository.findByEmail(request.getEmail())
+        var user = userRepository.findByEmail(request.getEmail()) //login icin email arama
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        var userPrincipal = new UserPrincipal(user);
+        var userPrincipal = new UserPrincipal(user); //loginden gelen tokenı userprincipale ceviyor
         var accessToken = jwtService.generateToken(userPrincipal);
         var refreshToken = jwtService.generateRefreshToken(userPrincipal);
 
