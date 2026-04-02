@@ -51,9 +51,10 @@ public class UserService {
         var accessToken = jwtService.generateToken(userPrincipal); //usera token uretıyoruz kullanıcı tekrar token üretmek zorunda kalmıyor
         var refreshToken = jwtService.generateRefreshToken(userPrincipal); //user token güncelliyoruz
 
-        return AuthResponse.builder()//Auth response login ve response basarılı olunca sucunun clienta tokenları döndürmesini saglayan obje
+        return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .tokenType("Bearer")
                 .build(); //build objeyi oluşturuyor ve döndürüyor
     }
 
@@ -75,6 +76,7 @@ public class UserService {
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .tokenType("Bearer")
                 .build();
     }
 }

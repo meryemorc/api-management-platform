@@ -32,6 +32,7 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     private String providerId;
+    @Enumerated(EnumType.STRING)
     private AuthProvider authProvider;
 
     @ManyToMany(fetch = FetchType.EAGER)
