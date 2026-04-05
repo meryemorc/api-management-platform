@@ -23,10 +23,14 @@ public class OrganizationController {
     public ResponseEntity<OrganizationResponse> createOrganization(
             @Valid @RequestBody CreateOrganizationRequest request,
             Authentication authentication) {
-        String email = authentication.getName();
-        // email'i userId olarak geçici kullanıyoruz, ileride User Service'ten UUID alacağız
-        OrganizationResponse response = organizationService.createOrganization(request, UUID.randomUUID());
-        return ResponseEntity.ok(response);
+        UUID userId = UUID.fromString((String) authentication.getCredentials());
+        return ResponseEntity.ok(organizationService.createOrganization(request, userId));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<OrganizationResponse>> getMyOrganizations(Authentication authentication) {
+        UUID userId = UUID.fromString((String) authentication.getCredentials());
+        return ResponseEntity.ok(organizationService.getUserOrganizations(userId));
     }
 
     @GetMapping("/{slug}")

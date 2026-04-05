@@ -50,7 +50,7 @@ public class OrganizationService {
     }
 
     public List<OrganizationResponse> getUserOrganizations(UUID userId) {
-        return organizationMemberRepository.findByOrganizationId(userId)
+        return organizationMemberRepository.findByUserId(userId)
                 .stream()
                 .map(m -> toResponse(m.getOrganization()))
                 .collect(Collectors.toList());

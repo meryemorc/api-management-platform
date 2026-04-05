@@ -48,7 +48,7 @@ public class UserService {
         userRepository.save(user);
 
         var userPrincipal = new UserPrincipal(user);// userı user principalla spring securitynın tanıyacagı formata getıryoruz
-        var accessToken = jwtService.generateToken(userPrincipal); //usera token uretıyoruz kullanıcı tekrar token üretmek zorunda kalmıyor
+        var accessToken = jwtService.generateToken(userPrincipal, userPrincipal.getUserId());//usera token uretıyoruz kullanıcı tekrar token üretmek zorunda kalmıyor
         var refreshToken = jwtService.generateRefreshToken(userPrincipal); //user token güncelliyoruz
 
         return AuthResponse.builder()
@@ -70,7 +70,7 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
         var userPrincipal = new UserPrincipal(user); //loginden gelen tokenı userprincipale ceviyor
-        var accessToken = jwtService.generateToken(userPrincipal);
+        var accessToken = jwtService.generateToken(userPrincipal, userPrincipal.getUserId());
         var refreshToken = jwtService.generateRefreshToken(userPrincipal);
 
         return AuthResponse.builder()
