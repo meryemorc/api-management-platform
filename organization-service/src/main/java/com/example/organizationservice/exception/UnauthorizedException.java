@@ -3,9 +3,9 @@ package com.example.organizationservice.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class ResourceNotFoundException extends RuntimeException { //kaynak bulunamadı hatası
-    public ResourceNotFoundException(String message) {
+@ResponseStatus(HttpStatus.FORBIDDEN)
+public class UnauthorizedException extends RuntimeException { //yetkisiz islem hatası
+    public UnauthorizedException(String message) {
         super(message);
     }
 }

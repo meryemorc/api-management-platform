@@ -1,6 +1,8 @@
 package com.example.organizationservice.controller;
 
+import com.example.organizationservice.dto.request.AddMemberRequest;
 import com.example.organizationservice.dto.request.CreateOrganizationRequest;
+import com.example.organizationservice.dto.response.MemberResponse;
 import com.example.organizationservice.dto.response.OrganizationResponse;
 import com.example.organizationservice.service.OrganizationService;
 import jakarta.validation.Valid;
@@ -36,5 +38,29 @@ public class OrganizationController {
     @GetMapping("/{slug}")
     public ResponseEntity<OrganizationResponse> getOrganization(@PathVariable String slug) {
         return ResponseEntity.ok(organizationService.getOrganizationBySlug(slug));
+    }
+
+    @PostMapping("/{slug}/members")
+    public ResponseEntity<MemberResponse> addMember(
+            @PathVariable String slug,
+            @Valid @RequestBody AddMemberRequest request,
+            Authentication authentication) {
+        UUID userId = UUID.fromString((String) authentication.getCredentials());
+        return ResponseEntity.ok(organizationService.addMember(slug, request, userId));
+    }
+
+    @GetMapping("/{slug}/members")
+    public ResponseEntity<List<MemberResponse>> getMembers(@PathVariable String slug) {
+        return ResponseEntity.ok(organizationService.getMembers(slug));
+    }
+
+    @DeleteMapping("/{slug}/members/{targetUserId}")
+    public ResponseEntity<Void> removeMember(
+            @PathVariable String slug,
+            @PathVariable UUID targetUserId,
+            Authentication authentication) {
+        UUID userId = UUID.fromString((String) authentication.getCredentials());
+        organizationService.removeMember(slug, targetUserId, userId);
+        return ResponseEntity.noContent().build();
     }
 }
