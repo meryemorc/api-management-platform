@@ -1,14 +1,20 @@
 server:
   port: 8082
 
+services:
+  user-service:
+    url: http://localhost:8081
+
 spring:
   application:
     name: organization-service
+
   datasource:
     url: jdbc:postgresql://localhost:5433/api_management_db
     username: apiuser
     password: password
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: validate

@@ -14,10 +14,13 @@ import com.example.organizationservice.exception.UnauthorizedException;
 import com.example.organizationservice.repository.OrganizationMemberRepository;
 import com.example.organizationservice.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,6 +30,10 @@ public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final RestTemplate restTemplate;
+
+    @Value("${services.user-service.url}")
+    private String userServiceUrl;
 
     @Transactional
     public OrganizationResponse createOrganization(CreateOrganizationRequest request, UUID userId) {
@@ -34,7 +41,7 @@ public class OrganizationService {
             throw new DuplicateResourceException("Bu slug zaten kullanımda: " + request.getSlug());
         }
 
-        Organization organization = Organization.builder()//organizasyon ekliyoruz
+        Organization organization = Organization.builder()
                 .name(request.getName())
                 .slug(request.getSlug())
                 .plan(PlanType.FREE)
@@ -43,7 +50,7 @@ public class OrganizationService {
 
         organizationRepository.save(organization);
 
-        OrganizationMember member = OrganizationMember.builder()// organizasyon üyesi ekliyoruz
+        OrganizationMember member = OrganizationMember.builder()
                 .userId(userId)
                 .organization(organization)
                 .role(MemberRole.ORG_ADMIN)
@@ -54,7 +61,7 @@ public class OrganizationService {
         return toResponse(organization);
     }
 
-    public List<OrganizationResponse> getUserOrganizations(UUID userId) {// o organizasyondaki kullanıcıları getirir
+    public List<OrganizationResponse> getUserOrganizations(UUID userId) {
         return organizationMemberRepository.findByUserId(userId)
                 .stream()
                 .map(m -> toResponse(m.getOrganization()))
@@ -67,22 +74,11 @@ public class OrganizationService {
         return toResponse(org);
     }
 
-    private OrganizationResponse toResponse(Organization org) {
-        return OrganizationResponse.builder()
-                .id(org.getId())
-                .name(org.getName())
-                .slug(org.getSlug())
-                .plan(org.getPlan())
-                .isActive(org.getIsActive())
-                .createdAt(org.getCreatedAt())
-                .build();
-    }
     @Transactional
     public MemberResponse addMember(String slug, AddMemberRequest request, UUID requestingUserId) {
         Organization organization = organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Organizasyon bulunamadı: " + slug));
 
-        // Sadece ORG_ADMIN üye ekleyebilir
         OrganizationMember requestingMember = organizationMemberRepository
                 .findByUserIdAndOrganizationId(requestingUserId, organization.getId())
                 .orElseThrow(() -> new UnauthorizedException("Bu organizasyona erişim yetkiniz yok"));
@@ -91,7 +87,17 @@ public class OrganizationService {
             throw new UnauthorizedException("Üye eklemek için ORG_ADMIN olmanız gerekiyor");
         }
 
-        if (organizationMemberRepository.existsByUserIdAndOrganizationId(request.getUserId(), organization.getId())) {
+        // User Service'ten email ile userId al
+        String url = userServiceUrl + "/api/v1/users/by-email/" + request.getEmail();
+        Map response = restTemplate.getForObject(url, Map.class);
+
+        if (response == null) {
+            throw new ResourceNotFoundException("Kullanıcı bulunamadı: " + request.getEmail());
+        }
+
+        UUID targetUserId = UUID.fromString((String) response.get("userId"));
+
+        if (organizationMemberRepository.existsByUserIdAndOrganizationId(targetUserId, organization.getId())) {
             throw new DuplicateResourceException("Bu kullanıcı zaten organizasyonun üyesi");
         }
 
@@ -99,11 +105,11 @@ public class OrganizationService {
         try {
             role = MemberRole.valueOf(request.getRole());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Geçersiz rol: " + request.getRole());
+            throw new ResourceNotFoundException("Geçersiz rol: " + request.getRole());
         }
 
         OrganizationMember member = OrganizationMember.builder()
-                .userId(request.getUserId())
+                .userId(targetUserId)
                 .organization(organization)
                 .role(role)
                 .build();
@@ -140,6 +146,17 @@ public class OrganizationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Üye bulunamadı"));
 
         organizationMemberRepository.delete(targetMember);
+    }
+
+    private OrganizationResponse toResponse(Organization org) {
+        return OrganizationResponse.builder()
+                .id(org.getId())
+                .name(org.getName())
+                .slug(org.getSlug())
+                .plan(org.getPlan())
+                .isActive(org.getIsActive())
+                .createdAt(org.getCreatedAt())
+                .build();
     }
 
     private MemberResponse toMemberResponse(OrganizationMember member) {

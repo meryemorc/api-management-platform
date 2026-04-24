@@ -18,7 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity // spring security aktif
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -30,38 +30,35 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll() //login ve register izinleri acık
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/users/by-email/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .anyRequest().authenticated() // geri kalan butun isteklere token zorunlu
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)//sessıon tutumuyoz her ıstek tokenıyla geliyo
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        //spring securıtyn kendı filterından önce calıstır
 
         return http.build();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() { //spring securitye kullanıcıyı nasıl dogrulayacagını anlatan yapı
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(); //Dao veritabanından kullanıcı cekip dogrulayan provider
-        provider.setUserDetailsService(userDetailsService); //kullanıcıyı hangı servisle cekip dogrulayacagını söylüyor
-        provider.setPasswordEncoder(passwordEncoder()); //sifreyi su encoder ile ççzöümle bcrypt karsılastırıyor bcrypt tek yönlü calısır hashlenmis sifre tekrar acvılamz
-        // sadece düz sifre bu hashe karsılık geliyor mu diye kontrol edebiliriz
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-        //sifre hashleniyo
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
-        //loginde sifre email dogrulaması icin
     }
 }
