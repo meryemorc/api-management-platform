@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,7 +21,6 @@ public class ApiKeyService {
 
         if (apiKey.isPresent()) {
             ApiKey key = apiKey.get();
-            // Key süresi dolmuş mu kontrol et
             if (key.getExpiresAt() != null && key.getExpiresAt().isBefore(LocalDateTime.now())) {
                 return Optional.empty();
             }
@@ -43,6 +43,17 @@ public class ApiKeyService {
                 .build();
 
         return apiKeyRepository.save(apiKey);
+    }
+
+    public List<ApiKey> getOrganizationKeys(UUID organizationId) {
+        return apiKeyRepository.findByOrganizationId(organizationId);
+    }
+
+    public void deactivateApiKey(UUID keyId) {
+        ApiKey apiKey = apiKeyRepository.findById(keyId)
+                .orElseThrow(() -> new RuntimeException("API key bulunamadı"));
+        apiKey.setIsActive(false);
+        apiKeyRepository.save(apiKey);
     }
 
     private String generateKeyValue() {
