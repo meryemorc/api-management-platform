@@ -33,6 +33,10 @@ spring:
     table: flyway_schema_history_gateway
     baseline-on-migrate: true
     baseline-version: 0
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 eureka:
   client:
