@@ -1,13 +1,12 @@
 package com.example.apigateway.repository;
 
 import com.example.apigateway.entity.ApiKey;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.List;
-import java.util.Optional;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import java.util.UUID;
 
-public interface ApiKeyRepository extends JpaRepository<ApiKey, UUID> {
-    Optional<ApiKey> findByKeyValueAndIsActiveTrue(String keyValue);
-    List<ApiKey> findByOrganizationId(UUID organizationId);
+public interface ApiKeyRepository extends ReactiveCrudRepository<ApiKey, UUID> {
+    Mono<ApiKey> findByKeyValueAndIsActiveTrue(String keyValue);
+    Flux<ApiKey> findByOrganizationId(UUID organizationId);
 }

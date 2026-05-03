@@ -58,7 +58,7 @@ public class UserService {
                 .build(); //build objeyi oluşturuyor ve döndürüyor
     }
 
-    public AuthResponse login(LoginRequest request) { //email login islemi dogrulama
+    public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -66,10 +66,13 @@ public class UserService {
                 )
         );
 
-        var user = userRepository.findByEmail(request.getEmail()) //login icin email arama
+        var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        var userPrincipal = new UserPrincipal(user); //loginden gelen tokenı userprincipale ceviyor
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        var userPrincipal = new UserPrincipal(user);
         var accessToken = jwtService.generateToken(userPrincipal, userPrincipal.getUserId());
         var refreshToken = jwtService.generateRefreshToken(userPrincipal);
 

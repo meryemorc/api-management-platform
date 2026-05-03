@@ -1,12 +1,14 @@
 package com.example.apigateway.entity;
 
-import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "api_keys")
+@Table("api_keys")
 @Getter
 @Setter
 @Builder
@@ -15,35 +17,29 @@ import java.util.UUID;
 public class ApiKey {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "key_value", nullable = false, unique = true)
+    @Column("key_value")
     private String keyValue;
 
-    @Column(nullable = false)
+    @Column("name")
     private String name;
 
-    @Column(name = "organization_id", nullable = false)
+    @Column("organization_id")
     private UUID organizationId;
 
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    @Column("is_active")
+    private Boolean isActive;
 
-    @Column(name = "daily_request_limit", nullable = false)
+    @Column("daily_request_limit")
     private Integer dailyRequestLimit;
 
-    @Column(name = "monthly_request_limit", nullable = false)
+    @Column("monthly_request_limit")
     private Integer monthlyRequestLimit;
 
-    @Column(name = "created_at")
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "expires_at")
+    @Column("expires_at")
     private LocalDateTime expiresAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

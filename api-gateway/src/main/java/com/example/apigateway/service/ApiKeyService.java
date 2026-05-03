@@ -4,10 +4,10 @@ import com.example.apigateway.entity.ApiKey;
 import com.example.apigateway.repository.ApiKeyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -16,22 +16,15 @@ public class ApiKeyService {
 
     private final ApiKeyRepository apiKeyRepository;
 
-    public Optional<ApiKey> validateApiKey(String keyValue) {
-        Optional<ApiKey> apiKey = apiKeyRepository.findByKeyValueAndIsActiveTrue(keyValue);
-
-        if (apiKey.isPresent()) {
-            ApiKey key = apiKey.get();
-            if (key.getExpiresAt() != null && key.getExpiresAt().isBefore(LocalDateTime.now())) {
-                return Optional.empty();
-            }
-        }
-
-        return apiKey;
+    public Mono<ApiKey> validateApiKey(String keyValue) {
+        return apiKeyRepository.findByKeyValueAndIsActiveTrue(keyValue)
+                .filter(key -> key.getExpiresAt() == null
+                        || key.getExpiresAt().isAfter(LocalDateTime.now()));
     }
 
-    public ApiKey createApiKey(String name, UUID organizationId,
-                               Integer dailyLimit, Integer monthlyLimit,
-                               LocalDateTime expiresAt) {
+    public Mono<ApiKey> createApiKey(String name, UUID organizationId,
+                                     Integer dailyLimit, Integer monthlyLimit,
+                                     LocalDateTime expiresAt) {
         ApiKey apiKey = ApiKey.builder()
                 .keyValue(generateKeyValue())
                 .name(name)
@@ -39,21 +32,25 @@ public class ApiKeyService {
                 .isActive(true)
                 .dailyRequestLimit(dailyLimit)
                 .monthlyRequestLimit(monthlyLimit)
+                .createdAt(LocalDateTime.now())
                 .expiresAt(expiresAt)
                 .build();
 
         return apiKeyRepository.save(apiKey);
     }
 
-    public List<ApiKey> getOrganizationKeys(UUID organizationId) {
+    public Flux<ApiKey> getOrganizationKeys(UUID organizationId) {
         return apiKeyRepository.findByOrganizationId(organizationId);
     }
 
-    public void deactivateApiKey(UUID keyId) {
-        ApiKey apiKey = apiKeyRepository.findById(keyId)
-                .orElseThrow(() -> new RuntimeException("API key bulunamadı"));
-        apiKey.setIsActive(false);
-        apiKeyRepository.save(apiKey);
+    public Mono<Void> deactivateApiKey(UUID keyId) {
+        return apiKeyRepository.findById(keyId)
+                .switchIfEmpty(Mono.error(new RuntimeException("API key bulunamadı: " + keyId)))
+                .flatMap(key -> {
+                    key.setIsActive(false);
+                    return apiKeyRepository.save(key);
+                })
+                .then();
     }
 
     private String generateKeyValue() {

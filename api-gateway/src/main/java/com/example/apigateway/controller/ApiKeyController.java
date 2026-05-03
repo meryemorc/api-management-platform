@@ -2,15 +2,21 @@ package com.example.apigateway.controller;
 
 import com.example.apigateway.dto.request.CreateApiKeyRequest;
 import com.example.apigateway.dto.response.ApiKeyResponse;
-import com.example.apigateway.entity.ApiKey;
 import com.example.apigateway.service.ApiKeyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * TODO: Bu controller ileride Organization Service'e taşınacak.
+ * API key yönetimi iş mantığı olarak orada olmalı.
+ * Gateway sadece key doğrulaması yapmalı.
+ */
 @RestController
 @RequestMapping("/api/v1/keys")
 @RequiredArgsConstructor
@@ -19,37 +25,32 @@ public class ApiKeyController {
     private final ApiKeyService apiKeyService;
 
     @PostMapping
-    public ResponseEntity<ApiKeyResponse> createApiKey(
+    public Mono<ResponseEntity<ApiKeyResponse>> createApiKey(
             @Valid @RequestBody CreateApiKeyRequest request) {
-        ApiKey apiKey = apiKeyService.createApiKey(
-                request.getName(),
-                request.getOrganizationId(),
-                request.getDailyRequestLimit(),
-                request.getMonthlyRequestLimit(),
-                request.getExpiresAt()
-        );
-
-        return ResponseEntity.ok(toResponse(apiKey));
+        return apiKeyService.createApiKey(
+                        request.getName(),
+                        request.getOrganizationId(),
+                        request.getDailyRequestLimit(),
+                        request.getMonthlyRequestLimit(),
+                        request.getExpiresAt()
+                )
+                .map(this::toResponse)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/organization/{organizationId}")
-    public ResponseEntity<java.util.List<ApiKeyResponse>> getOrganizationKeys(
-            @PathVariable UUID organizationId) {
-        return ResponseEntity.ok(
-                apiKeyService.getOrganizationKeys(organizationId)
-                        .stream()
-                        .map(this::toResponse)
-                        .collect(java.util.stream.Collectors.toList())
-        );
+    public Flux<ApiKeyResponse> getOrganizationKeys(@PathVariable UUID organizationId) {
+        return apiKeyService.getOrganizationKeys(organizationId)
+                .map(this::toResponse);
     }
 
     @DeleteMapping("/{keyId}")
-    public ResponseEntity<Void> deactivateApiKey(@PathVariable UUID keyId) {
-        apiKeyService.deactivateApiKey(keyId);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> deactivateApiKey(@PathVariable UUID keyId) {
+        return apiKeyService.deactivateApiKey(keyId)
+                .thenReturn(ResponseEntity.<Void>noContent().build());
     }
 
-    private ApiKeyResponse toResponse(ApiKey apiKey) {
+    private ApiKeyResponse toResponse(com.example.apigateway.entity.ApiKey apiKey) {
         return ApiKeyResponse.builder()
                 .id(apiKey.getId())
                 .keyValue(apiKey.getKeyValue())
