@@ -14,6 +14,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import com.example.userservice.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.example.userservice.exception.DuplicateResourceException;
+import com.example.userservice.exception.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,7 +32,7 @@ public class UserService {
 
     public AuthResponse register(RegisterRequest request) { //register isteginden nesne üretip bu nesnelerin fieldlarıyla user üretiyo
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Bu email zaten kayıtlı");
+            throw new DuplicateResourceException("Bu email zaten kayıtlı");
         }
 
         var user = User.builder()
@@ -42,7 +44,7 @@ public class UserService {
                 .authProvider(AuthProvider.LOCAL)//google veya github kaydı değil local kayıt
                 .createdAt(LocalDateTime.now())
                 .roles(List.of(roleRepository.findByName("ORG_MEMBER")
-                        .orElseThrow(() -> new RuntimeException("Rol bulunamadı"))))
+                        .orElseThrow(() -> new ResourceNotFoundException("Rol bulunamadı"))))
                 .build(); //user build ediyor
 
         userRepository.save(user);
@@ -67,7 +69,7 @@ public class UserService {
         );
 
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
