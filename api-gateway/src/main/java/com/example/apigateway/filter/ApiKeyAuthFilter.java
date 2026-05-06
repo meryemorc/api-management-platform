@@ -1,8 +1,10 @@
 package com.example.apigateway.filter;
 
+import com.example.apigateway.event.ApiRequestEvent;
 import com.example.apigateway.service.ApiKeyService;
-import com.example.apigateway.service.RateLimitService;
 import com.example.apigateway.service.JwtService;
+import com.example.apigateway.service.KafkaProducerService;
+import com.example.apigateway.service.RateLimitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 @Component
 @RequiredArgsConstructor
 public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
@@ -19,12 +23,12 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
     private final ApiKeyService apiKeyService;
     private final RateLimitService rateLimitService;
     private final JwtService jwtService;
+    private final KafkaProducerService kafkaProducerService;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        // Auth endpoint'leri ve Swagger geç
         if (path.startsWith("/api/v1/auth")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")) {
@@ -34,23 +38,22 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
         String apiKeyHeader = exchange.getRequest().getHeaders().getFirst("X-API-Key");
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
 
-        // API Key ile gelen istek
         if (apiKeyHeader != null && !apiKeyHeader.isEmpty()) {
             return handleApiKeyRequest(exchange, chain, apiKeyHeader);
         }
 
-        // JWT ile gelen istek
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return handleJwtRequest(exchange, chain, authHeader);
         }
 
-        // İkisi de yoksa reddet
         return unauthorized(exchange);
     }
 
     private Mono<Void> handleApiKeyRequest(ServerWebExchange exchange,
                                            GatewayFilterChain chain,
                                            String apiKeyHeader) {
+        long startTime = System.currentTimeMillis();
+
         return apiKeyService.validateApiKey(apiKeyHeader)
                 .flatMap(key ->
                         rateLimitService.isAllowed(
@@ -67,8 +70,6 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
                                     key.getId().toString(),
                                     key.getDailyRequestLimit()
                             ).flatMap(remaining -> {
-                                // Downstream servislere organizasyon bilgisini iletiyoruz
-                                // Bu sayede her servis kendi başına token parse etmek zorunda kalmıyor
                                 ServerWebExchange mutatedExchange = exchange.mutate()
                                         .request(r -> r
                                                 .header("X-Organization-Id", key.getOrganizationId().toString())
@@ -77,11 +78,30 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
                                         )
                                         .build();
 
-                                return chain.filter(mutatedExchange);
+                                // Kafka event'i istek tamamlandıktan sonra gönderiyoruz
+                                // doFinally hem başarılı hem hatalı durumda çalışır
+                                return chain.filter(mutatedExchange)
+                                        .doFinally(signalType -> {
+                                            long responseTime = System.currentTimeMillis() - startTime;
+                                            int statusCode = mutatedExchange.getResponse().getStatusCode() != null
+                                                    ? mutatedExchange.getResponse().getStatusCode().value()
+                                                    : 0;
+
+                                            kafkaProducerService.sendApiRequestEvent(
+                                                    ApiRequestEvent.builder()
+                                                            .apiKeyId(key.getId().toString())
+                                                            .organizationId(key.getOrganizationId())
+                                                            .path(exchange.getRequest().getURI().getPath())
+                                                            .method(exchange.getRequest().getMethod().name())
+                                                            .statusCode(statusCode)
+                                                            .responseTimeMs(responseTime)
+                                                            .timestamp(LocalDateTime.now())
+                                                            .build()
+                                            );
+                                        });
                             });
                         })
                 )
-                // validateApiKey Mono.empty() döndürdüyse key geçersiz demektir
                 .switchIfEmpty(Mono.defer(() -> unauthorized(exchange)));
     }
 
@@ -90,7 +110,6 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
                                         String authHeader) {
         String token = authHeader.substring(7);
 
-        // Token geçerli değilse reddet — önceki kodda bu kontrol yoktu
         if (!jwtService.isTokenValid(token)) {
             return unauthorized(exchange);
         }
@@ -98,8 +117,6 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
         String userId = jwtService.extractUserId(token);
         String email = jwtService.extractEmail(token);
 
-        // Downstream servislere kullanıcı bilgisini header olarak iletiyoruz
-        // Servisler token parse etmek yerine bu header'ları okuyabilir
         ServerWebExchange mutatedExchange = exchange.mutate()
                 .request(r -> r
                         .header("X-User-Id", userId)

@@ -25,10 +25,16 @@ public class AuthController {
 
     private final UserService userService;
 
-    @Operation(
-            summary = "Yeni kullanıcı kaydı",
-            description = "Email ve şifre ile kayıt olur. Başarılı olursa access + refresh token döner."
-    )
+
+    @Operation(summary = "Token yenile", description = "Refresh token ile yeni access token üretir")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Yeni access token üretildi"),
+            @ApiResponse(responseCode = "401", description = "Geçersiz refresh token")
+    })
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestHeader("X-Refresh-Token") String refreshToken) {
+        return ResponseEntity.ok(userService.refreshToken(refreshToken));
+    }
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Kayıt başarılı",
                     content = @Content(schema = @Schema(implementation = AuthResponse.class))),

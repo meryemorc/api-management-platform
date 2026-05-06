@@ -84,4 +84,24 @@ public class UserService {
                 .tokenType("Bearer")
                 .build();
     }
+    public AuthResponse refreshToken(String refreshToken) {
+        String email = jwtService.extractEmail(refreshToken);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
+
+        var userPrincipal = new UserPrincipal(user);
+
+        if (!jwtService.isTokenValid(refreshToken, userPrincipal)) {
+            throw new RuntimeException("Geçersiz refresh token");
+        }
+
+        var newAccessToken = jwtService.generateToken(userPrincipal, userPrincipal.getUserId());
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .build();
+    }
 }
