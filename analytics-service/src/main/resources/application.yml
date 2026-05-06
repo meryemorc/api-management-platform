@@ -1,0 +1,32 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: analytics-service
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/analytics_db
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: analytics-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.example.apigateway.event,com.example.analyticsservice.event"
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+jwt:
+  secret: ${JWT_SECRET}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

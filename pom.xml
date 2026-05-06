@@ -25,6 +25,7 @@
         <module>user-service</module>
         <module>organization-service</module>
         <module>api-gateway</module>
+        <module>analytics-service</module>
     </modules>
 
     <dependencyManagement>
