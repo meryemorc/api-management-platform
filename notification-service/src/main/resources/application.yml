@@ -1,1 +1,88 @@
-spring.application.name=notification-service
+server:
+  port: 8084
+
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/api_management_db
+    username: apiuser
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_notification
+    baseline-on-migrate: true
+    baseline-version: 0
+    url: jdbc:postgresql://localhost:5433/api_management_db
+    user: apiuser
+    password: password
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.example.notificationservice.event.NotificationEvent
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+jwt:
+  secret: ${JWT_SECRET}
+
+resend:
+  api-key: ${RESEND_API_KEY}
+  from-email: onboarding@resend.dev
+  from-name: API Management Platform
+
+resilience4j:
+  retry:
+    instances:
+      emailSender:
+        max-attempts: 3
+        wait-duration: 2s
+        retry-exceptions:
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+  circuitbreaker:
+    instances:
+      emailSender:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

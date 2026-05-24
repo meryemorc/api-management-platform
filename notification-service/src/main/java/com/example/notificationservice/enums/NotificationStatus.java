@@ -1,4 +1,8 @@
 package com.example.notificationservice.enums;
 
-public class NotificationStatus {
+public enum NotificationStatus {
+    PENDING,
+    SENT,
+    FAILED,
+    SKIPPED
 }

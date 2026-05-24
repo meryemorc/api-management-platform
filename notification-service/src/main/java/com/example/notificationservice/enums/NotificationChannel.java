@@ -1,4 +1,6 @@
 package com.example.notificationservice.enums;
 
-public class NotificationChannel {
+public enum NotificationChannel {
+    EMAIL,
+    WEBHOOK
 }
