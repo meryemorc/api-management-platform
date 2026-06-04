@@ -1,4 +1,9 @@
 package com.example.billingservice.enums;
 
-public class PaymentStatus {
+public enum PaymentStatus {
+    PENDING,
+    SUCCEEDED,
+    FAILED,
+    CANCELLED,
+    REFUNDED
 }

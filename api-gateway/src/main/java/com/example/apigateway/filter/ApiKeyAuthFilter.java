@@ -30,6 +30,8 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
 
         if (path.startsWith("/api/v1/auth")
+                || path.startsWith("/api/v1/notifications")
+                || path.startsWith("/api/v1/billing")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")) {
             return chain.filter(exchange);

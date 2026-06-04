@@ -1,4 +1,8 @@
 package com.example.billingservice.enums;
 
-public class InvoiceType {
+public enum InvoiceItemType {
+    SUBSCRIPTION,
+    OVERAGE,
+    DISCOUNT,
+    TAX
 }

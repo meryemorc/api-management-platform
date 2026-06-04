@@ -1,4 +1,9 @@
 package com.example.billingservice.enums;
 
-public class InvoiceStatus {
+public enum InvoiceStatus {
+    DRAFT,
+    OPEN,
+    PAID,
+    VOID,
+    UNCOLLECTIBLE
 }

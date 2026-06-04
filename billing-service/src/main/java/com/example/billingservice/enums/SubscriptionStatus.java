@@ -1,4 +1,9 @@
 package com.example.billingservice.enums;
 
-public class SubscriptionClass {
+public enum SubscriptionStatus {
+    ACTIVE,
+    CANCELLED,
+    PAST_DUE,
+    TRIALING,
+    UNPAID
 }

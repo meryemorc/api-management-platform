@@ -1,4 +1,8 @@
 package com.example.billingservice.enums;
 
-public class PlanType {
+public enum PlanType {
+    FREE,
+    STARTER,
+    PRO,
+    ENTERPRISE
 }

@@ -26,6 +26,8 @@
         <module>organization-service</module>
         <module>api-gateway</module>
         <module>analytics-service</module>
+        <module>notification-service</module>
+        <module>billing-service</module>
     </modules>
 
     <dependencyManagement>

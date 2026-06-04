@@ -1,4 +1,6 @@
 package com.example.billingservice.enums;
 
-public class BillingCycle {
+public enum BillingCycle {
+    MONTHLY,
+    YEARLY
 }
