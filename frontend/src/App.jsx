@@ -8,6 +8,8 @@ import Notifications from './pages/Notifications'
 import ApiKeys from './pages/ApiKeys'
 import Landing from './pages/Landing'
 import Docs from './pages/Docs'
+import Users from './pages/Users'
+import Organizations from './pages/Organizations'
 
 const dashboardRoutes = [
     { path: '/', component: Dashboard, title: 'Dashboard' },
@@ -15,6 +17,8 @@ const dashboardRoutes = [
     { path: '/billing', component: Billing, title: 'Billing' },
     { path: '/notifications', component: Notifications, title: 'Notifications' },
     { path: '/api-keys', component: ApiKeys, title: 'API Keys' },
+    { path: '/users', component: Users, title: 'Users' },
+    { path: '/organizations', component: Organizations, title: 'Organizations' },
 ]
 
 function Layout({ component: Component, title }) {

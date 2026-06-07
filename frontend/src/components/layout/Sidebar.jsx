@@ -1,15 +1,17 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, BarChart3, CreditCard, Bell, Key, Settings, Zap, ChevronRight, Globe, BookOpen } from 'lucide-react'
+import { LayoutDashboard, BarChart3, CreditCard, Bell, Key, Settings, Zap, ChevronRight, Globe, BookOpen, Users, Building2 } from 'lucide-react'
 
 const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/organizations', icon: Building2, label: 'Organizations' },
+    { to: '/users', icon: Users, label: 'Users' },
     { to: '/billing', icon: CreditCard, label: 'Billing' },
     { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/api-keys', icon: Key, label: 'API Keys' },
-    { to: '/settings', icon: Settings, label: 'Settings' },
     { to: '/landing', icon: Globe, label: 'Landing Page' },
     { to: '/docs', icon: BookOpen, label: 'Documentation' },
+    { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 export default function Sidebar() {
     return (
