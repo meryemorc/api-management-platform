@@ -33,7 +33,8 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
                 || path.startsWith("/api/v1/notifications")
                 || path.startsWith("/api/v1/billing")
                 || path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")) {
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/api/v1/analytics")) {
             return chain.filter(exchange);
         }
 
