@@ -1,5 +1,7 @@
 import { invoices, plans } from '../data/mockData'
 import { CheckCircle, Clock, XCircle, TrendingUp, DollarSign, Users, CreditCard } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { getBillingPlans } from '../services/api'
 
 const planColors = {
     FREE: { bg: 'rgba(255,255,255,0.04)', color: '#71717a' },
@@ -14,19 +16,19 @@ const statusConfig = {
     VOID: { icon: XCircle, color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
 }
 
-const tooltipStyle = {
-    contentStyle: {
-        background: '#0a0a0a',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '8px',
-        fontSize: '12px',
-        color: '#fff'
-    },
-}
-
 export default function Billing() {
+    const [realPlans, setRealPlans] = useState(null)
+
     const totalRevenue = plans.reduce((acc, p) => acc + p.revenue, 0)
     const totalSubscribers = plans.reduce((acc, p) => acc + p.subscribers, 0)
+
+    useEffect(() => {
+        getBillingPlans()
+            .then(res => setRealPlans(res.data))
+            .catch(() => setRealPlans(null))
+    }, [])
+
+    const activePlans = realPlans || plans
 
     return (
         <div className="p-6 space-y-5">
@@ -56,28 +58,32 @@ export default function Billing() {
 
             {/* Plan Distribution */}
             <div className="grid grid-cols-4 gap-3">
-                {plans.map((plan) => (
+                {activePlans.map((plan) => (
                     <div key={plan.name} className="rounded-xl p-5 transition-all"
                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
                          onMouseEnter={e => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.12)'}
                          onMouseLeave={e => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.06)'}>
                         <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium px-2 py-0.5 rounded-md"
-                    style={{ background: planColors[plan.name].bg, color: planColors[plan.name].color }}>
-                {plan.name}
-              </span>
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-md"
+                                  style={{ background: planColors[plan.name]?.bg, color: planColors[plan.name]?.color }}>
+                                {plan.name}
+                            </span>
                             <TrendingUp size={13} style={{ color: '#3f3f46' }} />
                         </div>
-                        <p className="text-white text-2xl font-semibold mb-0.5">{plan.subscribers}</p>
-                        <p className="text-xs mb-3" style={{ color: '#52525b' }}>subscribers</p>
+                        <p className="text-white text-2xl font-semibold mb-0.5">
+                            {plan.subscribers ?? plan.requestLimit?.toLocaleString()}
+                        </p>
+                        <p className="text-xs mb-3" style={{ color: '#52525b' }}>
+                            {plan.subscribers ? 'subscribers' : 'req/month limit'}
+                        </p>
                         <div className="w-full rounded-full h-1" style={{ background: 'rgba(255,255,255,0.06)' }}>
                             <div className="h-1 rounded-full" style={{
-                                width: `${(plan.subscribers / 18) * 100}%`,
+                                width: `${Math.min((plan.subscribers ?? plan.requestLimit) / (realPlans ? 1000000 : 18) * 100, 100)}%`,
                                 background: 'rgba(255,255,255,0.25)'
                             }} />
                         </div>
                         <p className="text-xs mt-2 font-medium" style={{ color: '#22c55e' }}>
-                            ${plan.revenue.toLocaleString()}/mo
+                            ${plan.revenue ?? plan.monthlyPrice}/mo
                         </p>
                     </div>
                 ))}
@@ -104,26 +110,25 @@ export default function Billing() {
                     {invoices.map((inv, i) => {
                         const { icon: StatusIcon, color, bg } = statusConfig[inv.status] || statusConfig.OPEN
                         return (
-                            <tr key={inv.id}
-                                className="transition-colors"
+                            <tr key={inv.id} className="transition-colors"
                                 style={{ borderBottom: i < invoices.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                 <td className="px-5 py-3 text-sm font-mono" style={{ color: '#a1a1aa' }}>{inv.id}</td>
                                 <td className="px-5 py-3 text-sm text-white">{inv.org}</td>
                                 <td className="px-5 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-md font-medium"
-                          style={{ background: planColors[inv.plan].bg, color: planColors[inv.plan].color }}>
-                      {inv.plan}
-                    </span>
+                                        <span className="text-xs px-2 py-0.5 rounded-md font-medium"
+                                              style={{ background: planColors[inv.plan]?.bg, color: planColors[inv.plan]?.color }}>
+                                            {inv.plan}
+                                        </span>
                                 </td>
                                 <td className="px-5 py-3 text-sm font-medium text-white">${inv.amount}</td>
                                 <td className="px-5 py-3">
-                    <span className="flex items-center gap-1.5 text-xs font-medium w-fit px-2 py-0.5 rounded-md"
-                          style={{ background: bg, color }}>
-                      <StatusIcon size={11} />
-                        {inv.status}
-                    </span>
+                                        <span className="flex items-center gap-1.5 text-xs font-medium w-fit px-2 py-0.5 rounded-md"
+                                              style={{ background: bg, color }}>
+                                            <StatusIcon size={11} />
+                                            {inv.status}
+                                        </span>
                                 </td>
                                 <td className="px-5 py-3 text-xs" style={{ color: '#52525b' }}>{inv.date}</td>
                             </tr>

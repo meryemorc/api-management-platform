@@ -1,5 +1,9 @@
+import { useState, useEffect } from 'react'
 import { recentNotifications } from '../data/mockData'
 import { Bell, Mail, Webhook, CheckCircle, XCircle, AlertTriangle, Key, TrendingDown } from 'lucide-react'
+import { getNotificationLogs } from '../services/api'
+
+const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
 
 const typeConfig = {
     RATE_LIMIT_WARNING: { icon: AlertTriangle, bg: 'rgba(234,179,8,0.08)', color: '#ca8a04', dot: '#ca8a04', label: 'Rate Limit Warning' },
@@ -17,14 +21,28 @@ const preferences = [
 ]
 
 export default function Notifications() {
+    const [realLogs, setRealLogs] = useState(null)
+
+    useEffect(() => {
+        getNotificationLogs(ORG_ID)
+            .then(res => setRealLogs(Array.isArray(res.data) ? res.data : null))
+            .catch(() => setRealLogs(null))
+    }, [])
+
+    const activeLogs = realLogs || recentNotifications
+
+    const totalSent = realLogs ? realLogs.length : 1284
+    const emailSent = realLogs ? realLogs.filter(n => n.channel === 'EMAIL').length : 1241
+    const webhookSent = realLogs ? realLogs.filter(n => n.channel === 'WEBHOOK').length : 43
+
     return (
         <div className="p-6 space-y-5">
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
                 {[
-                    { icon: Bell, label: 'Total Sent', value: '1,284', sub: 'All time' },
-                    { icon: Mail, label: 'Email Delivered', value: '1,241', sub: '96.7% delivery rate' },
-                    { icon: Webhook, label: 'Webhook Sent', value: '43', sub: '100% success rate' },
+                    { icon: Bell, label: 'Total Sent', value: totalSent.toLocaleString(), sub: 'All time' },
+                    { icon: Mail, label: 'Email Delivered', value: emailSent.toLocaleString(), sub: '96.7% delivery rate' },
+                    { icon: Webhook, label: 'Webhook Sent', value: webhookSent.toLocaleString(), sub: '100% success rate' },
                 ].map(({ icon: Icon, label, value, sub }) => (
                     <div key={label} className="rounded-xl p-5 transition-all"
                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -50,12 +68,19 @@ export default function Notifications() {
                         <p className="text-white text-sm font-medium">Recent Notifications</p>
                     </div>
                     <div>
-                        {recentNotifications.map((n, i) => {
-                            const cfg = typeConfig[n.type]
+                        {activeLogs.map((n, i) => {
+                            const type = n.notificationType || n.type
+                            const cfg = typeConfig[type] || typeConfig.RATE_LIMIT_WARNING
                             const Icon = cfg.icon
+                            const status = n.status
+                            const label = n.recipientEmail || n.org || '-'
+                            const time = n.sentAt
+                                ? new Date(n.sentAt).toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+                                : n.time
+
                             return (
                                 <div key={n.id} className="flex items-center justify-between px-5 py-3 transition-colors"
-                                     style={{ borderBottom: i < recentNotifications.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                                     style={{ borderBottom: i < activeLogs.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
                                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                     <div className="flex items-center gap-3">
@@ -65,19 +90,19 @@ export default function Notifications() {
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-white">{cfg.label}</p>
-                                            <p className="text-xs" style={{ color: '#52525b' }}>{n.org}</p>
+                                            <p className="text-xs" style={{ color: '#52525b' }}>{label}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs" style={{ color: '#3f3f46' }}>{n.time}</span>
+                                        <span className="text-xs" style={{ color: '#3f3f46' }}>{time}</span>
                                         <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-md"
                                               style={{
-                                                  background: n.status === 'SENT' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-                                                  color: n.status === 'SENT' ? '#22c55e' : '#ef4444'
+                                                  background: status === 'SENT' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                                                  color: status === 'SENT' ? '#22c55e' : '#ef4444'
                                               }}>
-                      {n.status === 'SENT' ? <CheckCircle size={10} /> : <XCircle size={10} />}
-                                            {n.status}
-                    </span>
+                                            {status === 'SENT' ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                                            {status}
+                                        </span>
                                     </div>
                                 </div>
                             )
@@ -101,20 +126,20 @@ export default function Notifications() {
                                     <p className="text-xs" style={{ color: '#52525b' }}>{pref.desc}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-md"
-                        style={{
-                            background: pref.email ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
-                            color: pref.email ? '#22c55e' : '#3f3f46'
-                        }}>
-                    <Mail size={10} /> Email
-                  </span>
+                                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-md"
+                                          style={{
+                                              background: pref.email ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
+                                              color: pref.email ? '#22c55e' : '#3f3f46'
+                                          }}>
+                                        <Mail size={10} /> Email
+                                    </span>
                                     <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-md"
                                           style={{
                                               background: pref.webhook ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
                                               color: pref.webhook ? '#22c55e' : '#3f3f46'
                                           }}>
-                    <Webhook size={10} /> Webhook
-                  </span>
+                                        <Webhook size={10} /> Webhook
+                                    </span>
                                 </div>
                             </div>
                         ))}

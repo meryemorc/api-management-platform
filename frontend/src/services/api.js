@@ -41,3 +41,12 @@ export const getNotificationLogs = (orgId) =>
 
 export const getPreferences = (orgId) =>
     api.get(`/api/v1/notifications/${orgId}/preferences`)
+
+// API Keys
+export const getApiKeys = (orgId) =>
+    api.get(`/api/v1/organizations/${orgId}/keys`)
+
+export const deleteApiKey = (keyId) =>
+    api.delete(`/api/v1/keys/${keyId}`)
+export const getMyOrganizations = () =>
+    api.get('/api/v1/organizations/my')

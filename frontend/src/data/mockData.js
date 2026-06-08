@@ -61,3 +61,8 @@ export const plans = [
     { name: 'PRO', subscribers: 14, revenue: 1386, limit: 100000 },
     { name: 'ENTERPRISE', subscribers: 3, revenue: 897, limit: 1000000 },
 ]
+export const apiKeys = [
+    { id: 1, name: 'Production Key', key: 'pk_live_3ea3fc6d1f2d401cbb91fbc09b11e75a', org: 'Acme Corp', requests: 45230, limit: 100000, active: true },
+    { id: 2, name: 'Staging Key', key: 'pk_live_0863c2d92e0a41cc91cbc76335004de2', org: 'TechStart', requests: 8920, limit: 10000, active: true },
+    { id: 3, name: 'Dev Key', key: 'pk_live_abc123def456ghi789jkl012mno345p', org: 'DevCo', requests: 320, limit: 1000, active: false },
+]

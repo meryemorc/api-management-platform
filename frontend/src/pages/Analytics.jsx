@@ -1,6 +1,10 @@
+import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { dailyRequests } from '../data/mockData'
 import { TrendingUp, Clock, CheckCircle } from 'lucide-react'
+import { getAnalyticsDaily } from '../services/api'
+
+const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
 
 const endpointData = [
     { name: '/api/v1/users/me', calls: 4200 },
@@ -29,9 +33,24 @@ const tooltipStyle = {
 }
 
 export default function Analytics() {
+    const [realDaily, setRealDaily] = useState(null)
+
+    useEffect(() => {
+        getAnalyticsDaily(ORG_ID)
+            .then(res => setRealDaily(res.data))
+            .catch(() => setRealDaily(null))
+    }, [])
+
+    const chartData = realDaily
+        ? (Array.isArray(realDaily) ? realDaily : [realDaily]).map(d => ({
+            date: d.date || d._id || 'N/A',
+            requests: d.totalRequests || d.requests || 0,
+            errors: d.errorCount || d.errors || 0,
+        }))
+        : dailyRequests
+
     return (
         <div className="p-6 space-y-5">
-            {/* Summary Cards */}
             <div className="grid grid-cols-3 gap-3">
                 {[
                     { icon: TrendingUp, label: 'Requests Today', value: '3,421', sub: '+12% vs yesterday', positive: true },
@@ -55,11 +74,10 @@ export default function Analytics() {
                 ))}
             </div>
 
-            {/* Area Chart */}
             <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <p className="text-white text-sm font-medium mb-5">Request Volume — Last 7 Days</p>
                 <ResponsiveContainer width="100%" height={260}>
-                    <AreaChart data={dailyRequests}>
+                    <AreaChart data={chartData}>
                         <defs>
                             <linearGradient id="reqGrad" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="rgba(255,255,255,0.15)" stopOpacity={1} />
@@ -81,7 +99,6 @@ export default function Analytics() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                {/* Top Endpoints */}
                 <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <p className="text-white text-sm font-medium mb-5">Top Endpoints</p>
                     <div className="space-y-4">
@@ -102,7 +119,6 @@ export default function Analytics() {
                     </div>
                 </div>
 
-                {/* Status Distribution */}
                 <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <p className="text-white text-sm font-medium mb-5">Response Status Distribution</p>
                     <div className="flex items-center justify-center">
