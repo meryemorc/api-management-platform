@@ -27,7 +27,7 @@ public class WebhookController {
             @Valid @RequestBody WebhookSubscriptionRequest request) {
 
         WebhookSubscription subscription = WebhookSubscription.builder()
-                .organizationId(organizationId)
+                 .organizationId(organizationId)
                 .url(request.getUrl())
                 .secret(request.getSecret())
                 .eventTypes(request.getEventTypes())

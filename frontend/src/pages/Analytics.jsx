@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { dailyRequests } from '../data/mockData'
 import { TrendingUp, Clock, CheckCircle } from 'lucide-react'
-import { getAnalyticsDaily } from '../services/api'
+import { getAnalyticsDaily, getAnalyticsMonthly, getTopEndpoints, getResponseTime } from '../services/api'
 
 const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
 
-const endpointData = [
+const mockEndpointData = [
     { name: '/api/v1/users/me', calls: 4200 },
     { name: '/api/v1/organizations/my', calls: 3100 },
     { name: '/api/v1/keys', calls: 2800 },
@@ -34,11 +34,26 @@ const tooltipStyle = {
 
 export default function Analytics() {
     const [realDaily, setRealDaily] = useState(null)
+    const [realMonthly, setRealMonthly] = useState(null)
+    const [realEndpoints, setRealEndpoints] = useState(null)
+    const [realResponseTime, setRealResponseTime] = useState(null)
 
     useEffect(() => {
         getAnalyticsDaily(ORG_ID)
             .then(res => setRealDaily(res.data))
             .catch(() => setRealDaily(null))
+
+        getAnalyticsMonthly(ORG_ID)
+            .then(res => setRealMonthly(res.data))
+            .catch(() => setRealMonthly(null))
+
+        getTopEndpoints(ORG_ID)
+            .then(res => setRealEndpoints(res.data))
+            .catch(() => setRealEndpoints(null))
+
+        getResponseTime(ORG_ID)
+            .then(res => setRealResponseTime(res.data))
+            .catch(() => setRealResponseTime(null))
     }, [])
 
     const chartData = realDaily
@@ -49,12 +64,27 @@ export default function Analytics() {
         }))
         : dailyRequests
 
+    const endpointData = realEndpoints
+        ? Object.entries(realEndpoints).map(([name, calls]) => ({ name, calls })).sort((a, b) => b.calls - a.calls).slice(0, 5)
+        : mockEndpointData
+
+    const maxCalls = endpointData.length > 0 ? endpointData[0].calls : 1
+
+    const todayRequests = realDaily
+        ? (Array.isArray(realDaily) ? realDaily[0]?.totalRequests : realDaily?.totalRequests) || 0
+        : 3421
+
+    const monthlyRequests = realMonthly?.totalRequests || 0
+    const avgResponseTime = realResponseTime?.averageResponseTimeMs
+        ? `${Math.round(realResponseTime.averageResponseTimeMs)}ms`
+        : '142ms'
+
     return (
         <div className="p-6 space-y-5">
             <div className="grid grid-cols-3 gap-3">
                 {[
-                    { icon: TrendingUp, label: 'Requests Today', value: '3,421', sub: '+12% vs yesterday', positive: true },
-                    { icon: Clock, label: 'Avg Response Time', value: '142ms', sub: '-8ms vs yesterday', positive: true },
+                    { icon: TrendingUp, label: 'Requests Today', value: todayRequests.toLocaleString(), sub: realMonthly ? `${monthlyRequests.toLocaleString()} this month` : '+12% vs yesterday', positive: true },
+                    { icon: Clock, label: 'Avg Response Time', value: avgResponseTime, sub: '-8ms vs yesterday', positive: true },
                     { icon: CheckCircle, label: 'Success Rate', value: '97.7%', sub: '+0.3% vs yesterday', positive: true },
                 ].map(({ icon: Icon, label, value, sub, positive }) => (
                     <div key={label} className="rounded-xl p-5 transition-all"
@@ -110,7 +140,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="w-full rounded-full h-1" style={{ background: 'rgba(255,255,255,0.06)' }}>
                                     <div className="h-1 rounded-full" style={{
-                                        width: `${(ep.calls / endpointData[0].calls) * 100}%`,
+                                        width: `${(ep.calls / maxCalls) * 100}%`,
                                         background: 'rgba(255,255,255,0.3)'
                                     }} />
                                 </div>

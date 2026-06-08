@@ -1,7 +1,9 @@
-import { invoices, plans } from '../data/mockData'
+import { invoices as mockInvoices, plans as mockPlans } from '../data/mockData'
 import { CheckCircle, Clock, XCircle, TrendingUp, DollarSign, Users, CreditCard } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { getBillingPlans } from '../services/api'
+import { getBillingPlans, getInvoices, getSubscription, getCurrentUsage } from '../services/api'
+
+const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
 
 const planColors = {
     FREE: { bg: 'rgba(255,255,255,0.04)', color: '#71717a' },
@@ -18,26 +20,60 @@ const statusConfig = {
 
 export default function Billing() {
     const [realPlans, setRealPlans] = useState(null)
-
-    const totalRevenue = plans.reduce((acc, p) => acc + p.revenue, 0)
-    const totalSubscribers = plans.reduce((acc, p) => acc + p.subscribers, 0)
+    const [realInvoices, setRealInvoices] = useState(null)
+    const [subscription, setSubscription] = useState(null)
+    const [usage, setUsage] = useState(null)
 
     useEffect(() => {
         getBillingPlans()
             .then(res => setRealPlans(res.data))
             .catch(() => setRealPlans(null))
+
+        getInvoices(ORG_ID)
+            .then(res => setRealInvoices(Array.isArray(res.data) ? res.data : null))
+            .catch(() => setRealInvoices(null))
+
+        getSubscription(ORG_ID)
+            .then(res => setSubscription(res.data))
+            .catch(() => setSubscription(null))
+
+        getCurrentUsage(ORG_ID)
+            .then(res => setUsage(res.data))
+            .catch(() => setUsage(null))
     }, [])
 
-    const activePlans = realPlans || plans
+    const activePlans = realPlans || mockPlans
+    const activeInvoices = realInvoices || mockInvoices
+    const openInvoices = activeInvoices.filter(i => i.status === 'OPEN').length
+    const totalRevenue = mockPlans.reduce((acc, p) => acc + p.revenue, 0)
+    const totalSubscribers = mockPlans.reduce((acc, p) => acc + p.subscribers, 0)
 
     return (
         <div className="p-6 space-y-5">
             {/* Top Stats */}
             <div className="grid grid-cols-3 gap-3">
                 {[
-                    { icon: DollarSign, label: 'Monthly Revenue', value: `$${totalRevenue.toLocaleString()}`, sub: '+8.2% vs last month', positive: true },
-                    { icon: Users, label: 'Total Subscribers', value: totalSubscribers, sub: '+3 this month', positive: true },
-                    { icon: CreditCard, label: 'Open Invoices', value: '2', sub: '$151.04 pending', positive: false },
+                    {
+                        icon: DollarSign,
+                        label: 'Monthly Revenue',
+                        value: subscription ? `$${subscription.plan?.monthlyPrice ?? totalRevenue}` : `$${totalRevenue.toLocaleString()}`,
+                        sub: '+8.2% vs last month',
+                        positive: true
+                    },
+                    {
+                        icon: Users,
+                        label: 'Active Plan',
+                        value: subscription ? subscription.plan?.name : totalSubscribers,
+                        sub: subscription ? subscription.billingCycle : '+3 this month',
+                        positive: true
+                    },
+                    {
+                        icon: CreditCard,
+                        label: 'Open Invoices',
+                        value: openInvoices,
+                        sub: usage ? `${usage.totalRequests} requests used` : '$151.04 pending',
+                        positive: false
+                    },
                 ].map(({ icon: Icon, label, value, sub, positive }) => (
                     <div key={label} className="rounded-xl p-5 transition-all"
                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -101,36 +137,40 @@ export default function Billing() {
                 <table className="w-full">
                     <thead>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        {['Invoice', 'Organization', 'Plan', 'Amount', 'Status', 'Date'].map((h) => (
+                        {['Invoice', 'Amount', 'Status', 'Period', 'Date'].map((h) => (
                             <th key={h} className="text-left px-5 py-3 text-xs font-medium" style={{ color: '#3f3f46' }}>{h}</th>
                         ))}
                     </tr>
                     </thead>
                     <tbody>
-                    {invoices.map((inv, i) => {
-                        const { icon: StatusIcon, color, bg } = statusConfig[inv.status] || statusConfig.OPEN
+                    {activeInvoices.map((inv, i) => {
+                        const status = inv.status || 'OPEN'
+                        const { icon: StatusIcon, color, bg } = statusConfig[status] || statusConfig.OPEN
+                        const invoiceNum = inv.invoiceNumber || inv.id
+                        const amount = inv.total ?? inv.amount
+                        const date = inv.createdAt
+                            ? new Date(inv.createdAt).toLocaleDateString('tr-TR')
+                            : inv.date
+                        const period = inv.periodStart
+                            ? `${new Date(inv.periodStart).toLocaleDateString('tr-TR')} - ${new Date(inv.periodEnd).toLocaleDateString('tr-TR')}`
+                            : '-'
+
                         return (
                             <tr key={inv.id} className="transition-colors"
-                                style={{ borderBottom: i < invoices.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                                style={{ borderBottom: i < activeInvoices.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                <td className="px-5 py-3 text-sm font-mono" style={{ color: '#a1a1aa' }}>{inv.id}</td>
-                                <td className="px-5 py-3 text-sm text-white">{inv.org}</td>
-                                <td className="px-5 py-3">
-                                        <span className="text-xs px-2 py-0.5 rounded-md font-medium"
-                                              style={{ background: planColors[inv.plan]?.bg, color: planColors[inv.plan]?.color }}>
-                                            {inv.plan}
-                                        </span>
-                                </td>
-                                <td className="px-5 py-3 text-sm font-medium text-white">${inv.amount}</td>
+                                <td className="px-5 py-3 text-sm font-mono" style={{ color: '#a1a1aa' }}>{invoiceNum}</td>
+                                <td className="px-5 py-3 text-sm font-medium text-white">${amount}</td>
                                 <td className="px-5 py-3">
                                         <span className="flex items-center gap-1.5 text-xs font-medium w-fit px-2 py-0.5 rounded-md"
                                               style={{ background: bg, color }}>
                                             <StatusIcon size={11} />
-                                            {inv.status}
+                                            {status}
                                         </span>
                                 </td>
-                                <td className="px-5 py-3 text-xs" style={{ color: '#52525b' }}>{inv.date}</td>
+                                <td className="px-5 py-3 text-xs" style={{ color: '#a1a1aa' }}>{period}</td>
+                                <td className="px-5 py-3 text-xs" style={{ color: '#52525b' }}>{date}</td>
                             </tr>
                         )
                     })}
