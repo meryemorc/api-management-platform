@@ -73,3 +73,20 @@ export const login = (email, password) =>
 
 export const register = (username, email, password) =>
     api.post('/api/v1/auth/register', { username, email, password })
+export const createOrganization = (name, slug) =>
+    api.post('/api/v1/organizations', { name, slug })
+
+export const addMember = (slug, email, role) =>
+    api.post(`/api/v1/organizations/${slug}/members`, { email, role })
+
+export const removeMember = (slug, userId) =>
+    api.delete(`/api/v1/organizations/${slug}/members/${userId}`)
+
+export const createApiKey = (name, orgId, dailyLimit, monthlyLimit) =>
+    api.post('/api/v1/keys', {
+        name,
+        organizationId: orgId,
+        dailyRequestLimit: dailyLimit,
+        monthlyRequestLimit: monthlyLimit
+    })
+export default api

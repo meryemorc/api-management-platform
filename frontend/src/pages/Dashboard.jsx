@@ -62,7 +62,10 @@ export default function Dashboard() {
             .catch(() => setDailyData(null))
     }, [])
 
-    const activeNotifications = notifications || []
+    const todayRequests = dailyData
+        ? (Array.isArray(dailyData) ? dailyData[0]?.totalRequests : dailyData?.totalRequests) || 0
+        : stats.totalRequests
+
     const totalRevenue = billingPlans
         ? billingPlans.reduce((acc, p) => acc + (p.monthlyPrice || 0), 0)
         : stats.totalRevenue
@@ -75,16 +78,16 @@ export default function Dashboard() {
         }))
         : dailyRequests
 
-    const displayNotifications = activeNotifications.length > 0
-        ? activeNotifications.slice(0, 5)
+    const displayNotifications = notifications && notifications.length > 0
+        ? notifications.slice(0, 5)
         : []
 
     return (
         <div className="p-6 space-y-5">
             <div className="grid grid-cols-4 gap-3">
-                <StatCard title="Total Requests" value={stats.totalRequests.toLocaleString()} change="12.5%" positive icon={Activity} />
+                <StatCard title="Total Requests Today" value={todayRequests.toLocaleString()} change="12.5%" positive icon={Activity} />
                 <StatCard title="Monthly Revenue" value={`$${totalRevenue.toLocaleString()}`} change="8.2%" positive icon={DollarSign} />
-                <StatCard title="Active Subscriptions" value={stats.activeSubscriptions} change="3 new" positive icon={Users} />
+                <StatCard title="Active Plans" value={billingPlans ? billingPlans.length : stats.activeSubscriptions} change="4 plans" positive icon={Users} />
                 <StatCard title="Error Rate" value={`${stats.errorRate}%`} change="0.5%" positive={false} icon={AlertTriangle} />
             </div>
 

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { dailyRequests } from '../data/mockData'
-import { TrendingUp, Clock, CheckCircle } from 'lucide-react'
-import { getAnalyticsDaily, getAnalyticsMonthly, getTopEndpoints, getResponseTime } from '../services/api'
+import { TrendingUp, Clock, CheckCircle, Zap } from 'lucide-react'
+import { getAnalyticsDaily, getAnalyticsMonthly, getTopEndpoints, getResponseTime, getApiKeys } from '../services/api'
 
 const ORG_ID = 'bd207ad8-fe5a-4a82-8cef-3c0d34338968'
 
@@ -37,8 +37,11 @@ export default function Analytics() {
     const [realMonthly, setRealMonthly] = useState(null)
     const [realEndpoints, setRealEndpoints] = useState(null)
     const [realResponseTime, setRealResponseTime] = useState(null)
+    const [apiKey, setApiKey] = useState(null)
+    const [sending, setSending] = useState(false)
+    const [sent, setSent] = useState(false)
 
-    useEffect(() => {
+    const fetchData = () => {
         getAnalyticsDaily(ORG_ID)
             .then(res => setRealDaily(res.data))
             .catch(() => setRealDaily(null))
@@ -54,7 +57,38 @@ export default function Analytics() {
         getResponseTime(ORG_ID)
             .then(res => setRealResponseTime(res.data))
             .catch(() => setRealResponseTime(null))
+    }
+
+    useEffect(() => {
+        fetchData()
+        getApiKeys(ORG_ID)
+            .then(res => {
+                const keys = res.data
+                if (Array.isArray(keys) && keys.length > 0) {
+                    setApiKey(keys[0].keyValue)
+                }
+            })
+            .catch(() => setApiKey(null))
     }, [])
+
+    const handleSendTestRequest = async () => {
+        if (!apiKey) return
+        setSending(true)
+        try {
+            await fetch(`http://localhost:8080/api/v1/analytics/${ORG_ID}/daily`, {
+                headers: { 'X-API-Key': apiKey }
+            })
+            setSent(true)
+            setTimeout(() => {
+                setSent(false)
+                fetchData()
+            }, 1500)
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setSending(false)
+        }
+    }
 
     const chartData = realDaily
         ? (Array.isArray(realDaily) ? realDaily : [realDaily]).map(d => ({
@@ -69,11 +103,9 @@ export default function Analytics() {
         : mockEndpointData
 
     const maxCalls = endpointData.length > 0 ? endpointData[0].calls : 1
-
     const todayRequests = realDaily
         ? (Array.isArray(realDaily) ? realDaily[0]?.totalRequests : realDaily?.totalRequests) || 0
         : 3421
-
     const monthlyRequests = realMonthly?.totalRequests || 0
     const avgResponseTime = realResponseTime?.averageResponseTimeMs
         ? `${Math.round(realResponseTime.averageResponseTimeMs)}ms`
@@ -105,7 +137,19 @@ export default function Analytics() {
             </div>
 
             <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <p className="text-white text-sm font-medium mb-5">Request Volume — Last 7 Days</p>
+                <div className="flex items-center justify-between mb-5">
+                    <p className="text-white text-sm font-medium">Request Volume — Last 7 Days</p>
+                    <button onClick={handleSendTestRequest} disabled={sending || !apiKey}
+                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
+                            style={{
+                                background: sent ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.06)',
+                                border: sent ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                                color: sent ? '#22c55e' : '#fff'
+                            }}>
+                        <Zap size={11} />
+                        {sent ? 'Request Sent!' : sending ? 'Sending...' : 'Send Test Request'}
+                    </button>
+                </div>
                 <ResponsiveContainer width="100%" height={260}>
                     <AreaChart data={chartData}>
                         <defs>
