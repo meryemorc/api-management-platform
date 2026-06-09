@@ -3,7 +3,7 @@ import { recentNotifications } from '../data/mockData'
 import { Bell, Mail, Webhook, CheckCircle, XCircle, AlertTriangle, Key, TrendingDown, Link } from 'lucide-react'
 import { getNotificationLogs, getPreferences, getWebhooks } from '../services/api'
 
-const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
+const ORG_ID = 'bd207ad8-fe5a-4a82-8cef-3c0d34338968'
 
 const typeConfig = {
     RATE_LIMIT_WARNING: { icon: AlertTriangle, bg: 'rgba(234,179,8,0.08)', color: '#ca8a04', label: 'Rate Limit Warning' },

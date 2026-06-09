@@ -2,21 +2,17 @@ import axios from 'axios'
 
 const GATEWAY_URL = 'http://localhost:8080'
 
-const headers = {
-    'X-User-Id': 'admin-user',
-    'X-User-Email': 'admin@apimanagement.com',
-}
-
 const api = axios.create({
     baseURL: GATEWAY_URL,
-    headers,
 })
-// Auth
-export const login = (email, password) =>
-    api.post('/api/v1/auth/login', { email, password })
 
-export const register = (username, email, password) =>
-    api.post('/api/v1/auth/register', { username, email, password })
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
 
 // Analytics
 export const getAnalyticsDaily = (orgId) =>
@@ -70,3 +66,10 @@ export const getMyOrganizations = () =>
 
 export const getOrgMembers = (slug) =>
     api.get(`/api/v1/organizations/${slug}/members`)
+
+// Auth
+export const login = (email, password) =>
+    api.post('/api/v1/auth/login', { email, password })
+
+export const register = (username, email, password) =>
+    api.post('/api/v1/auth/register', { username, email, password })

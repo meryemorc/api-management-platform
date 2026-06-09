@@ -4,7 +4,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { stats, dailyRequests, revenueData } from '../data/mockData'
 import { getNotificationLogs, getBillingPlans, getAnalyticsDaily } from '../services/api'
 
-const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
+const ORG_ID = 'bd207ad8-fe5a-4a82-8cef-3c0d34338968'
 
 const StatCard = ({ title, value, change, positive, icon: Icon }) => (
     <div className="rounded-xl p-5 transition-all cursor-default"

@@ -16,13 +16,13 @@ public class KafkaProducerService {
     private final KafkaTemplate<String, ApiRequestEvent> kafkaTemplate;
 
     public void sendApiRequestEvent(ApiRequestEvent event) {
+        log.info("Kafka event gönderiliyor: orgId={}", event.getOrganizationId());
         kafkaTemplate.send(TOPIC, event.getOrganizationId().toString(), event)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
                         log.error("Event gönderilemedi: {}", ex.getMessage());
                     } else {
-                        log.debug("Event gönderildi: topic={}, partition={}",
-                                TOPIC, result.getRecordMetadata().partition());
+                        log.info("Event gönderildi: topic={}", TOPIC);
                     }
                 });
     }

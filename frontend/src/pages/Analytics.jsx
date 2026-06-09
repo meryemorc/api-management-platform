@@ -4,7 +4,7 @@ import { dailyRequests } from '../data/mockData'
 import { TrendingUp, Clock, CheckCircle } from 'lucide-react'
 import { getAnalyticsDaily, getAnalyticsMonthly, getTopEndpoints, getResponseTime } from '../services/api'
 
-const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
+const ORG_ID = 'bd207ad8-fe5a-4a82-8cef-3c0d34338968'
 
 const mockEndpointData = [
     { name: '/api/v1/users/me', calls: 4200 },

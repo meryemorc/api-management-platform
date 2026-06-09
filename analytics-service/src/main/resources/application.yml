@@ -10,7 +10,7 @@ spring:
       uri: mongodb://localhost:27017/analytics_db
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: 192.168.1.116:9092
     consumer:
       group-id: analytics-group
       auto-offset-reset: earliest

@@ -70,13 +70,15 @@ spring:
       port: 6379
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: 192.168.1.116:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
-
+        request.timeout.ms: 5000
+        delivery.timeout.ms: 10000
+        max.block.ms: 5000
 eureka:
   client:
     register-with-eureka: false
@@ -86,3 +88,13 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,beans
+
+logging:
+  level:
+    com.example.apigateway: DEBUG

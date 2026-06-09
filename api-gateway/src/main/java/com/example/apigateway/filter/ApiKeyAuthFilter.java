@@ -6,6 +6,7 @@ import com.example.apigateway.service.JwtService;
 import com.example.apigateway.service.KafkaProducerService;
 import com.example.apigateway.service.RateLimitService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -16,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
@@ -28,12 +30,9 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        log.info("Filter çalıştı: path={}", path);
 
         if (path.startsWith("/api/v1/auth")
-                || path.startsWith("/api/v1/notifications")
-                || path.startsWith("/api/v1/billing")
-                || path.startsWith("/api/v1/analytics")
-                || path.startsWith("/api/v1/organizations")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")) {
             return chain.filter(exchange);
@@ -56,6 +55,7 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
     private Mono<Void> handleApiKeyRequest(ServerWebExchange exchange,
                                            GatewayFilterChain chain,
                                            String apiKeyHeader) {
+        log.info("API Key isteği alındı: path={}", exchange.getRequest().getURI().getPath());
         long startTime = System.currentTimeMillis();
 
         return apiKeyService.validateApiKey(apiKeyHeader)
@@ -77,13 +77,13 @@ public class ApiKeyAuthFilter implements GlobalFilter, Ordered {
                                 ServerWebExchange mutatedExchange = exchange.mutate()
                                         .request(r -> r
                                                 .header("X-Organization-Id", key.getOrganizationId().toString())
+                                                .header("X-User-Id", key.getOrganizationId().toString())
+                                                .header("X-User-Email", "api-key@system.com")
                                                 .header("X-RateLimit-Remaining", String.valueOf(remaining))
                                                 .header("X-RateLimit-Limit", String.valueOf(key.getDailyRequestLimit()))
                                         )
                                         .build();
 
-                                // Kafka event'i istek tamamlandıktan sonra gönderiyoruz
-                                // doFinally hem başarılı hem hatalı durumda çalışır
                                 return chain.filter(mutatedExchange)
                                         .doFinally(signalType -> {
                                             long responseTime = System.currentTimeMillis() - startTime;

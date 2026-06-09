@@ -3,7 +3,7 @@ import { CheckCircle, Clock, XCircle, TrendingUp, DollarSign, Users, CreditCard 
 import { useState, useEffect } from 'react'
 import { getBillingPlans, getInvoices, getSubscription, getCurrentUsage } from '../services/api'
 
-const ORG_ID = '7611c924-e3dd-4ce7-a933-b89efbe9959e'
+const ORG_ID = 'bd207ad8-fe5a-4a82-8cef-3c0d34338968'
 
 const planColors = {
     FREE: { bg: 'rgba(255,255,255,0.04)', color: '#71717a' },
